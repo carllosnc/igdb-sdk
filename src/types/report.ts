@@ -1,4 +1,4 @@
-import type { IGDBBase } from "./base";
+import type { IGDBBase } from "./base.js";
 
 export interface Report extends IGDBBase {
   entity_type?: number;

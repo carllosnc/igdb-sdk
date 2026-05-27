@@ -1,4 +1,4 @@
-import type { IGDBBase } from "./base";
+import type { IGDBBase } from "./base.js";
 
 export interface AlternativeName extends IGDBBase {
   comment?: string;

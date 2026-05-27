@@ -1,4 +1,4 @@
-import type { IGDBBase, IGDBImage, IGDBDateTime } from "./base";
+import type { IGDBBase, IGDBImage, IGDBDateTime } from "./base.js";
 
 export interface Event extends IGDBBase {
   description?: string;

@@ -1,4 +1,4 @@
-import type { IGDBBase, IGDBDateTime } from "./base";
+import type { IGDBBase, IGDBDateTime } from "./base.js";
 
 export interface ReleaseDate extends IGDBBase {
   category?: number;

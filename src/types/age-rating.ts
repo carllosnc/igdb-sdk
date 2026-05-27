@@ -1,4 +1,4 @@
-import type { IGDBBase } from "./base";
+import type { IGDBBase } from "./base.js";
 
 export interface AgeRating extends IGDBBase {
   category?: number;

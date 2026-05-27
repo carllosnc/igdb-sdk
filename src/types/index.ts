@@ -1,51 +1,51 @@
-import type { IGDBBase, IGDBImage, IGDBDateTime, IGDBTimestamp } from "./base";
+import type { IGDBBase, IGDBImage, IGDBDateTime, IGDBTimestamp } from "./base.js";
 import type {
   AgeRating, AgeRatingCategory, AgeRatingContentDescription,
   AgeRatingContentDescriptionType, AgeRatingContentDescriptionV2,
   AgeRatingOrganization,
-} from "./age-rating";
-import type { AlternativeName } from "./misc";
-import type { Artwork, ArtworkType, Cover, Screenshot } from "./artwork";
+} from "./age-rating.js";
+import type { AlternativeName } from "./misc.js";
+import type { Artwork, ArtworkType, Cover, Screenshot } from "./artwork.js";
 import type {
   Character, CharacterGender, CharacterMugShot, CharacterSpecies,
-} from "./character";
+} from "./character.js";
 import type {
   Collection, CollectionMembership, CollectionMembershipType,
   CollectionRelation, CollectionRelationType, CollectionType,
-} from "./collection";
+} from "./collection.js";
 import type {
   Company, CompanyLogo, CompanySize, CompanyStatus, CompanyType,
   CompanyTypeHistory, CompanyWebsite,
-} from "./company";
-import type { DateFormat } from "./misc";
-import type { EntityType } from "./misc";
-import type { Event, EventLogo, EventNetwork } from "./event";
-import type { ExternalGame, ExternalGameSource } from "./external-game";
-import type { Franchise } from "./misc";
+} from "./company.js";
+import type { DateFormat } from "./misc.js";
+import type { EntityType } from "./misc.js";
+import type { Event, EventLogo, EventNetwork } from "./event.js";
+import type { ExternalGame, ExternalGameSource } from "./external-game.js";
+import type { Franchise } from "./misc.js";
 import type {
   Game, GameEngine, GameEngineLogo, GameLocalization, GameMode,
   GameReleaseFormat, GameStatus, GameTimeToBeat, GameType, GameVideo,
-} from "./game";
-import type { Genre } from "./misc";
-import type { InvolvedCompany } from "./misc";
-import type { Keyword } from "./misc";
-import type { Language, LanguageSupport, LanguageSupportType } from "./misc";
-import type { MultiplayerMode } from "./misc";
-import type { NetworkType } from "./misc";
+} from "./game.js";
+import type { Genre } from "./misc.js";
+import type { InvolvedCompany } from "./misc.js";
+import type { Keyword } from "./misc.js";
+import type { Language, LanguageSupport, LanguageSupportType } from "./misc.js";
+import type { MultiplayerMode } from "./misc.js";
+import type { NetworkType } from "./misc.js";
 import type {
   Platform, PlatformFamily, PlatformLogo, PlatformType, PlatformVersion,
   PlatformVersionCompany, PlatformVersionReleaseDate, PlatformWebsite,
-} from "./platform";
-import type { PlayerPerspective } from "./misc";
-import type { PopularityPrimitive, PopularityType } from "./popularity";
-import type { Region } from "./misc";
+} from "./platform.js";
+import type { PlayerPerspective } from "./misc.js";
+import type { PopularityPrimitive, PopularityType } from "./popularity.js";
+import type { Region } from "./misc.js";
 import type {
   ReleaseDate, ReleaseDateRegion, ReleaseDateStatus,
-} from "./release-date";
-import type { Report, ReportType } from "./report";
-import type { SearchResult } from "./search";
-import type { Theme } from "./misc";
-import type { Website, WebsiteType } from "./website";
+} from "./release-date.js";
+import type { Report, ReportType } from "./report.js";
+import type { SearchResult } from "./search.js";
+import type { Theme } from "./misc.js";
+import type { Website, WebsiteType } from "./website.js";
 
 export type {
   IGDBBase, IGDBImage, IGDBDateTime, IGDBTimestamp,

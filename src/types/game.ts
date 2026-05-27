@@ -1,4 +1,4 @@
-import type { IGDBBase, IGDBImage, IGDBTimestamp } from "./base";
+import type { IGDBBase, IGDBImage, IGDBTimestamp } from "./base.js";
 
 export interface Game extends IGDBBase {
   age_ratings?: number[];

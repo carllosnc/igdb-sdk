@@ -1,4 +1,4 @@
-import type { IGDBBase, IGDBImage, IGDBTimestamp } from "./base";
+import type { IGDBBase, IGDBImage, IGDBTimestamp } from "./base.js";
 
 export interface Platform extends IGDBBase {
   abbreviation?: string;

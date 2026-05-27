@@ -1,4 +1,4 @@
-import type { IGDBBase, IGDBTimestamp } from "./base";
+import type { IGDBBase, IGDBTimestamp } from "./base.js";
 
 export interface SearchResult extends IGDBBase {
   alternative_name?: string;

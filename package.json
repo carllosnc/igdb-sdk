@@ -1,11 +1,50 @@
 {
   "name": "igdb-sdk",
-  "module": "index.ts",
+  "version": "0.1.0",
+  "description": "Unofficial IGDB API v4 SDK for TypeScript",
   "type": "module",
-  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "!dist/**/*.tsbuildinfo"
+  ],
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "prepublishOnly": "bun run build",
     "typecheck": "tsc --noEmit",
     "test": "bun test"
+  },
+  "keywords": [
+    "igdb",
+    "twitch",
+    "sdk",
+    "api",
+    "games",
+    "videogames"
+  ],
+  "license": "MIT",
+  "author": "Carlos Costa (https://github.com/carllosnc)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/carllosnc/igdb-sdk.git"
+  },
+  "bugs": {
+    "url": "https://github.com/carllosnc/igdb-sdk/issues"
+  },
+  "homepage": "https://github.com/carllosnc/igdb-sdk#readme",
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "devDependencies": {
     "@types/bun": "latest"

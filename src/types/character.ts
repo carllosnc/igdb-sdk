@@ -1,4 +1,4 @@
-import type { IGDBBase, IGDBImage } from "./base";
+import type { IGDBBase, IGDBImage } from "./base.js";
 
 export interface Character extends IGDBBase {
   akas?: string[];
