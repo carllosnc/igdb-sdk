@@ -18,6 +18,8 @@ import { IgdbApiError, IgdbAuthError, IgdbRateLimitError } from "./errors.js";
 import type { RequestContext, Middleware } from "./middleware.js";
 import type { RetryOptions } from "./retry.js";
 import { defaultRetry, sleep, calculateBackoff, isRetryable } from "./retry.js";
+import type { HttpClient, HttpResponse } from "./http.js";
+import { FetchHttpClient } from "./http.js";
 
 const BASE_URL = "https://api.igdb.com/v4";
 const TOKEN_URL = "https://id.twitch.tv/oauth2/token";
@@ -30,6 +32,7 @@ export interface IGDBClientOptions {
   retry?: RetryOptions;
   middlewares?: Middleware[];
   debug?: boolean;
+  httpClient?: HttpClient;
 }
 
 type EndpointName = keyof EndpointResponseMap;
@@ -41,6 +44,7 @@ export class IGDBClient {
   private tokenExpiresAt: number = 0;
   private retryOptions: Required<RetryOptions>;
   private middlewares: Middleware[];
+  private httpClient: HttpClient;
 
   game: GameClient;
   platform: PlatformClient;
@@ -63,6 +67,7 @@ export class IGDBClient {
     this.clientSecret = options.clientSecret;
     this.retryOptions = { ...defaultRetry, ...options.retry };
     this.middlewares = options.middlewares ?? [];
+    this.httpClient = options.httpClient ?? new FetchHttpClient();
 
     if (options.debug) {
       this.middlewares.unshift({
@@ -103,20 +108,21 @@ export class IGDBClient {
       return this.accessToken;
     }
 
-    const res = await fetch(TOKEN_URL, {
-      method: "POST",
-      body: new URLSearchParams({
-        client_id: this.clientId,
-        client_secret: this.clientSecret,
-        grant_type: "client_credentials",
-      }),
+    const body = new URLSearchParams({
+      client_id: this.clientId,
+      client_secret: this.clientSecret,
+      grant_type: "client_credentials",
     });
 
-    if (!res.ok) {
-      throw new IgdbAuthError(res.status, await res.text());
+    const res = await this.httpClient.post(TOKEN_URL, {
+      "Content-Type": "application/x-www-form-urlencoded",
+    }, body.toString());
+
+    if (res.status >= 400) {
+      throw new IgdbAuthError(res.status, res.body);
     }
 
-    const data = (await res.json()) as { access_token: string; expires_in: number };
+    const data = JSON.parse(res.body) as { access_token: string; expires_in: number };
     this.accessToken = data.access_token;
     this.tokenExpiresAt = Date.now() + data.expires_in * 1000 - 60000;
     return this.accessToken!;
@@ -144,7 +150,7 @@ export class IGDBClient {
       }
     }
 
-    let response: Response;
+    let response: HttpResponse;
     try {
       response = await this.fetchWithRetry(ctx);
     } catch (error) {
@@ -162,7 +168,7 @@ export class IGDBClient {
       }
     }
 
-    return response.json() as Promise<EndpointResponseMap[E]>;
+    return JSON.parse(response.body) as EndpointResponseMap[E];
   }
 
   async queryCount<E extends EndpointName>(endpoint: E, body: IGDBQuery): Promise<number> {
@@ -184,7 +190,7 @@ export class IGDBClient {
       }
     }
 
-    let response: Response;
+    let response: HttpResponse;
     try {
       response = await this.fetchWithRetry(ctx);
     } catch (error) {
@@ -202,21 +208,16 @@ export class IGDBClient {
       }
     }
 
-    const data = (await response.json()) as { count: number }[];
+    const data = JSON.parse(response.body) as { count: number }[];
     return data[0]?.count ?? 0;
   }
 
-  private async fetchWithRetry(ctx: RequestContext, attempt: number = 0): Promise<Response> {
+  private async fetchWithRetry(ctx: RequestContext, attempt: number = 0): Promise<HttpResponse> {
     try {
-      const res = await fetch(`${BASE_URL}/${ctx.endpoint}`, {
-        method: "POST",
-        headers: ctx.headers,
-        body: ctx.body,
-      });
+      const res = await this.httpClient.post(`${BASE_URL}/${ctx.endpoint}`, ctx.headers, ctx.body);
 
-      if (!res.ok) {
-        const text = await res.text();
-        const error = classifyError(res.status, ctx.endpoint, ctx.body, text);
+      if (res.status >= 400) {
+        const error = classifyError(res.status, ctx.endpoint, ctx.body, res.body);
 
         if (attempt < this.retryOptions.maxRetries && isRetryable(error)) {
           await sleep(calculateBackoff(attempt, this.retryOptions.baseDelayMs, this.retryOptions.maxDelayMs));

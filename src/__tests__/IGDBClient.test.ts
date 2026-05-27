@@ -1,6 +1,7 @@
 import { describe, expect, test, mock, afterEach, spyOn } from "bun:test";
 import { IGDBClient } from "../IGDBClient.js";
 import { IgdbApiError, IgdbAuthError, IgdbRateLimitError } from "../errors.js";
+import type { HttpClient } from "../http.js";
 
 const TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const BASE_URL = "https://api.igdb.com/v4";
@@ -205,8 +206,8 @@ describe("IGDBClient", () => {
 
       const mw = {
         name: "response-modifier",
-        onResponse(_res: Response) {
-          return new Response(JSON.stringify([{ id: 99, name: "Modified" }]), { status: 200 });
+        onResponse() {
+          return { status: 200, body: JSON.stringify([{ id: 99, name: "Modified" }]), headers: {} };
         },
       };
       const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", middlewares: [mw] });
@@ -237,12 +238,12 @@ describe("IGDBClient", () => {
       const mw1 = {
         name: "mw1",
         onRequest(ctx: any) { order.push("req1"); return ctx; },
-        onResponse(r: Response) { order.push("res1"); return r; },
+        onResponse(r: any) { order.push("res1"); return r; },
       };
       const mw2 = {
         name: "mw2",
         onRequest(ctx: any) { order.push("req2"); return ctx; },
-        onResponse(r: Response) { order.push("res2"); return r; },
+        onResponse(r: any) { order.push("res2"); return r; },
       };
       const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", middlewares: [mw1, mw2] });
       await client.query("games", "fields name;");
@@ -348,6 +349,23 @@ describe("IGDBClient", () => {
 
       expect(logs.some((l) => l.includes("[IGDB] →"))).toBe(true);
       expect(logs.some((l) => l.includes("[IGDB] ←"))).toBe(true);
+    });
+  });
+
+  describe("custom HttpClient", () => {
+    test("can inject a custom HttpClient", async () => {
+      let called = false;
+      const mockHttp: HttpClient = {
+        post: async (_url, _headers, _body) => {
+          called = true;
+          return { status: 200, body: JSON.stringify([{ id: 1, name: "Custom" }]), headers: {} };
+        },
+      };
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", httpClient: mockHttp });
+      const result = await client.query("games", "fields name;");
+      expect(called).toBe(true);
+      expect(result).toEqual([{ id: 1, name: "Custom" }]);
     });
   });
 });

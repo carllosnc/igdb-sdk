@@ -1,3 +1,5 @@
+import type { HttpResponse } from "./http.js";
+
 export interface RequestContext {
   endpoint: string;
   body: string;
@@ -7,6 +9,6 @@ export interface RequestContext {
 export interface Middleware {
   name: string;
   onRequest?: (ctx: RequestContext) => RequestContext | Promise<RequestContext>;
-  onResponse?: (response: Response, ctx: RequestContext) => Response | Promise<Response>;
+  onResponse?: (response: HttpResponse, ctx: RequestContext) => HttpResponse | Promise<HttpResponse>;
   onError?: (error: Error, ctx: RequestContext) => void | Promise<void>;
 }
