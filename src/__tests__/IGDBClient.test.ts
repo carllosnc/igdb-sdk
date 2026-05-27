@@ -1,5 +1,6 @@
-import { describe, expect, test, mock, afterEach } from "bun:test";
+import { describe, expect, test, mock, afterEach, spyOn } from "bun:test";
 import { IGDBClient } from "../IGDBClient.js";
+import { IgdbApiError, IgdbAuthError, IgdbRateLimitError } from "../errors.js";
 
 const TOKEN_URL = "https://id.twitch.tv/oauth2/token";
 const BASE_URL = "https://api.igdb.com/v4";
@@ -38,6 +39,13 @@ describe("IGDBClient", () => {
       expect(client.search).toBeDefined();
       expect(client.website).toBeDefined();
       expect(client.misc).toBeDefined();
+    });
+
+    test("applies retry and middleware options", () => {
+      const mw = { name: "test", onRequest: (ctx: any) => ctx };
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", retry: { maxRetries: 5 }, middlewares: [mw] });
+      expect((client as any).retryOptions.maxRetries).toBe(5);
+      expect((client as any).middlewares).toEqual([mw]);
     });
   });
 
@@ -86,7 +94,7 @@ describe("IGDBClient", () => {
       expect(opts.body).toBe("fields name; limit 1;");
     });
 
-    test("throws on API error", async () => {
+    test("throws IgdbApiError on 4xx API error", async () => {
       global.fetch = mock((...args: any[]) => {
         if (String(args[0]) === TOKEN_URL) {
           return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
@@ -95,18 +103,150 @@ describe("IGDBClient", () => {
       }) as unknown as typeof fetch;
 
       const client = new IGDBClient({ clientId: "cid", clientSecret: "cs" });
-      expect(client.query("games", "bad query;")).rejects.toThrow(
-        "IGDB API error (games): 400 Bad Request",
-      );
+      const promise = client.query("games", "bad query;");
+      await expect(promise).rejects.toThrow(IgdbApiError);
+      await expect(promise).rejects.toMatchObject({ statusCode: 400, endpoint: "games" });
     });
 
-    test("throws on auth failure", async () => {
+    test("throws IgdbAuthError on auth failure", async () => {
       global.fetch = mock((..._: any[]) => new Response("", { status: 401 })) as unknown as typeof fetch;
 
       const client = new IGDBClient({ clientId: "bad", clientSecret: "bad" });
-      expect(client.query("games", "fields name;")).rejects.toThrow(
-        "Auth failed: 401 ",
+      const promise = client.query("games", "fields name;");
+      await expect(promise).rejects.toThrow(IgdbAuthError);
+      await expect(promise).rejects.toMatchObject({ statusCode: 401 });
+    });
+
+    test("throws IgdbRateLimitError on 429", async () => {
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        return new Response("Rate limited", { status: 429 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs" });
+      const promise = client.query("games", "fields name;");
+      await expect(promise).rejects.toThrow(IgdbRateLimitError);
+      await expect(promise).rejects.toMatchObject({ statusCode: 429 });
+    });
+  });
+
+  describe("retry", () => {
+    test("retries on 5xx up to maxRetries then throws", async () => {
+      let attempts = 0;
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        attempts++;
+        return new Response("Server Error", { status: 503 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", retry: { maxRetries: 2, baseDelayMs: 5 } });
+      const promise = client.query("games", "fields name;");
+      await expect(promise).rejects.toThrow(IgdbApiError);
+      expect(attempts).toBe(3);
+    });
+
+    test("succeeds on retry after transient failure", async () => {
+      let attempts = 0;
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        attempts++;
+        if (attempts === 1) return new Response("Server Error", { status: 503 });
+        return new Response(JSON.stringify([{ id: 1, name: "Recovered" }]), { status: 200 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", retry: { maxRetries: 2, baseDelayMs: 5 } });
+      const result = await client.query("games", "fields name;");
+      expect(attempts).toBe(2);
+      expect(result).toEqual([{ id: 1, name: "Recovered" }]);
+    });
+
+    test("does not retry on 4xx errors", async () => {
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        return new Response("Bad Request", { status: 400 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", retry: { maxRetries: 3, baseDelayMs: 5 } });
+      const promise = client.query("games", "bad;");
+      await expect(promise).rejects.toThrow(IgdbApiError);
+    });
+  });
+
+  describe("middleware", () => {
+    test("onRequest can modify headers", async () => {
+      global.fetch = okTokenFetch() as unknown as typeof fetch;
+
+      const mw = {
+        name: "header-modifier",
+        onRequest(ctx: any) {
+          ctx.headers["X-Custom"] = "value";
+          return ctx;
+        },
+      };
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", middlewares: [mw] });
+      await client.query("games", "fields name;");
+
+      const apiCalls = (global.fetch as any).mock.calls.filter(
+        (c: any) => String(c[0]).startsWith(BASE_URL),
       );
+      expect(apiCalls[0][1].headers["X-Custom"]).toBe("value");
+    });
+
+    test("onResponse can modify the response", async () => {
+      global.fetch = okTokenFetch() as unknown as typeof fetch;
+
+      const mw = {
+        name: "response-modifier",
+        onResponse(_res: Response) {
+          return new Response(JSON.stringify([{ id: 99, name: "Modified" }]), { status: 200 });
+        },
+      };
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", middlewares: [mw] });
+      const result = await client.query("games", "fields name;");
+      expect(result).toEqual([{ id: 99, name: "Modified" }]);
+    });
+
+    test("onError is called on failure", async () => {
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        return new Response("Bad Request", { status: 400 });
+      }) as unknown as typeof fetch;
+
+      const onError = mock(() => {});
+      const mw = { name: "error-logger", onError };
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", middlewares: [mw] });
+      await expect(client.query("games", "bad;")).rejects.toThrow();
+      expect(onError).toHaveBeenCalledTimes(1);
+      expect((onError.mock.calls[0] as any)[0]).toBeInstanceOf(IgdbApiError);
+    });
+
+    test("middleware pipeline runs in order", async () => {
+      global.fetch = okTokenFetch() as unknown as typeof fetch;
+
+      const order: string[] = [];
+      const mw1 = {
+        name: "mw1",
+        onRequest(ctx: any) { order.push("req1"); return ctx; },
+        onResponse(r: Response) { order.push("res1"); return r; },
+      };
+      const mw2 = {
+        name: "mw2",
+        onRequest(ctx: any) { order.push("req2"); return ctx; },
+        onResponse(r: Response) { order.push("res2"); return r; },
+      };
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", middlewares: [mw1, mw2] });
+      await client.query("games", "fields name;");
+      expect(order).toEqual(["req1", "req2", "res2", "res1"]);
     });
   });
 });

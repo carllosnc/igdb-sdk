@@ -17,5 +17,9 @@ export { SearchClient } from "./client/search/index.js";
 export { WebsiteClient } from "./client/website/index.js";
 export { MiscClient } from "./client/misc/index.js";
 
+export { IgdbError, IgdbApiError, IgdbAuthError, IgdbRateLimitError } from "./errors.js";
+export type { Middleware, RequestContext } from "./middleware.js";
+export type { RetryOptions } from "./retry.js";
+
 export * from "./types/index.js";
 export * from "./query.js";

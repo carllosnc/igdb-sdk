@@ -14,6 +14,10 @@ import { ReportClient } from "./client/report/index.js";
 import { SearchClient } from "./client/search/index.js";
 import { WebsiteClient } from "./client/website/index.js";
 import { MiscClient } from "./client/misc/index.js";
+import { IgdbApiError, IgdbAuthError, IgdbRateLimitError } from "./errors.js";
+import type { RequestContext, Middleware } from "./middleware.js";
+import type { RetryOptions } from "./retry.js";
+import { defaultRetry, sleep, calculateBackoff, isRetryable } from "./retry.js";
 
 const BASE_URL = "https://api.igdb.com/v4";
 const TOKEN_URL = "https://id.twitch.tv/oauth2/token";
@@ -23,6 +27,8 @@ export type IGDBQuery = string;
 export interface IGDBClientOptions {
   clientId: string;
   clientSecret: string;
+  retry?: RetryOptions;
+  middlewares?: Middleware[];
 }
 
 type EndpointName = keyof EndpointResponseMap;
@@ -32,6 +38,8 @@ export class IGDBClient {
   private clientSecret: string;
   private accessToken: string | null = null;
   private tokenExpiresAt: number = 0;
+  private retryOptions: Required<RetryOptions>;
+  private middlewares: Middleware[];
 
   game: GameClient;
   platform: PlatformClient;
@@ -52,6 +60,8 @@ export class IGDBClient {
   constructor(options: IGDBClientOptions) {
     this.clientId = options.clientId;
     this.clientSecret = options.clientSecret;
+    this.retryOptions = { ...defaultRetry, ...options.retry };
+    this.middlewares = options.middlewares ?? [];
 
     this.game = new GameClient(this);
     this.platform = new PlatformClient(this);
@@ -85,7 +95,7 @@ export class IGDBClient {
     });
 
     if (!res.ok) {
-      throw new Error(`Auth failed: ${res.status} ${await res.text()}`);
+      throw new IgdbAuthError(res.status, await res.text());
     }
 
     const data = (await res.json()) as { access_token: string; expires_in: number };
@@ -100,20 +110,80 @@ export class IGDBClient {
   ): Promise<EndpointResponseMap[E]> {
     const token = await this.ensureToken();
 
-    const res = await fetch(`${BASE_URL}/${endpoint}`, {
-      method: "POST",
+    let ctx: RequestContext = {
+      endpoint,
+      body,
       headers: {
         "Client-ID": this.clientId,
         Authorization: `Bearer ${token}`,
         "Content-Type": "text/plain",
       },
-      body,
-    });
+    };
 
-    if (!res.ok) {
-      throw new Error(`IGDB API error (${endpoint}): ${res.status} ${await res.text()}`);
+    for (const mw of this.middlewares) {
+      if (mw.onRequest) {
+        ctx = await mw.onRequest(ctx);
+      }
     }
 
-    return res.json() as Promise<EndpointResponseMap[E]>;
+    let response: Response;
+    try {
+      response = await this.fetchWithRetry(ctx);
+    } catch (error) {
+      for (const mw of this.middlewares) {
+        if (mw.onError) {
+          await mw.onError(error as Error, ctx);
+        }
+      }
+      throw error;
+    }
+
+    for (const mw of this.middlewares.toReversed()) {
+      if (mw.onResponse) {
+        response = await mw.onResponse(response, ctx);
+      }
+    }
+
+    return response.json() as Promise<EndpointResponseMap[E]>;
   }
+
+  private async fetchWithRetry(ctx: RequestContext, attempt: number = 0): Promise<Response> {
+    try {
+      const res = await fetch(`${BASE_URL}/${ctx.endpoint}`, {
+        method: "POST",
+        headers: ctx.headers,
+        body: ctx.body,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        const error = classifyError(res.status, ctx.endpoint, ctx.body, text);
+
+        if (attempt < this.retryOptions.maxRetries && isRetryable(error)) {
+          await sleep(calculateBackoff(attempt, this.retryOptions.baseDelayMs, this.retryOptions.maxDelayMs));
+          return this.fetchWithRetry(ctx, attempt + 1);
+        }
+
+        throw error;
+      }
+
+      return res;
+    } catch (error) {
+      if (error instanceof IgdbApiError) throw error;
+
+      if (attempt < this.retryOptions.maxRetries) {
+        await sleep(calculateBackoff(attempt, this.retryOptions.baseDelayMs, this.retryOptions.maxDelayMs));
+        return this.fetchWithRetry(ctx, attempt + 1);
+      }
+
+      throw error;
+    }
+  }
+}
+
+function classifyError(status: number, endpoint: string, body: string, responseText: string): IgdbApiError {
+  if (status === 429) {
+    return new IgdbRateLimitError(status, endpoint, body, responseText);
+  }
+  return new IgdbApiError(status, endpoint, body, responseText);
 }
