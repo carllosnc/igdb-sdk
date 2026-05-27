@@ -2,15 +2,13 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": false,
-    "outDir": "dist/esm",
+    "outDir": "dist/cjs",
     "rootDir": "src",
-    "declaration": true,
-    "declarationMap": true,
     "sourceMap": true,
-    "module": "NodeNext",
-    "moduleResolution": "NodeNext",
+    "module": "CommonJS",
+    "moduleResolution": "Node10",
     "allowImportingTsExtensions": false,
-    "verbatimModuleSyntax": true
+    "verbatimModuleSyntax": false
   },
   "include": ["src"],
   "exclude": ["src/__tests__"]
