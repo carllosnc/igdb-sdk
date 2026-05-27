@@ -122,6 +122,24 @@ const logger = {
 const client = new IGDBClient({ clientId, clientSecret, middlewares: [logger] });
 ```
 
+### Custom HttpClient
+
+Inject your own HTTP layer — useful for adding tracing, using axios, or mocking in tests.
+
+```typescript
+import type { HttpClient } from "igdb-sdk";
+
+const tracingClient: HttpClient = {
+  async post(url, headers, body) {
+    console.log(`POST ${url}`);
+    const res = await fetch(url, { method: "POST", headers, body });
+    return { status: res.status, body: await res.text(), headers: Object.fromEntries(res.headers.entries()) };
+  },
+};
+
+const client = new IGDBClient({ clientId, clientSecret, httpClient: tracingClient });
+```
+
 ### Debug mode
 
 Built-in request/response logging — shorthand for the logger middleware above.
@@ -138,11 +156,14 @@ const client = new IGDBClient({ clientId, clientSecret, debug: true });
 See [`examples/`](./examples) for runnable scripts. Run with your `.env` file loaded:
 
 ```bash
-bun run --env-file .env examples/basic-usage.ts
-bun run --env-file .env examples/search-games.ts
-bun run --env-file .env examples/game-details.ts
-bun run --env-file .env examples/company-and-platforms.ts
-bun run --env-file .env examples/reference-data.ts
+bun run --env-file .env examples/basic-usage.ts          # intro
+bun run --env-file .env examples/search-games.ts          # search + filters
+bun run --env-file .env examples/game-details.ts          # multi-endpoint assembly
+bun run --env-file .env examples/company-and-platforms.ts # company info + platforms
+bun run --env-file .env examples/reference-data.ts        # parallel queries + dynamic building
+bun run --env-file .env examples/middleware.ts             # middleware pipeline
+bun run --env-file .env examples/error-handling-and-retry.ts
+bun run --env-file .env examples/query-count-and-by-id.ts
 ```
 
 ## Sub-clients
