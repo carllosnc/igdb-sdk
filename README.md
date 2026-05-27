@@ -1,5 +1,9 @@
 # IGDB SDK
 
+<picture>
+  <img alt="IGDB logo" src="https://upload.wikimedia.org/wikipedia/commons/1/19/IGDB_logo.svg" width="200">
+</picture>
+
 Unofficial [IGDB API v4](https://api-docs.igdb.com/) SDK for Bun/TypeScript.
 
 Zero runtime dependencies — uses Bun's built-in `fetch`.
