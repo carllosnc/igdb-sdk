@@ -1,5 +1,5 @@
 {
-  "name": "igdb-sdk",
+  "name": "@carlosnc/igdb-sdk",
   "version": "0.1.1",
   "description": "Unofficial IGDB API v4 SDK for TypeScript",
   "type": "module",

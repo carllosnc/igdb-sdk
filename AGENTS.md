@@ -16,7 +16,7 @@ Always use `bun` instead of `npm`, `node`, `npx`, or any other JavaScript runtim
 
 # Publishing Release
 
-Package: `igdb-sdk`
+Package: `@carlosnc/igdb-sdk`
 
 1. **Determine bump**: `patch` (bug fixes), `minor` (new features), `major` (breaking). Check commits since last tag: `git log --oneline v$(node -p "require('./package.json').version")..HEAD`.
 

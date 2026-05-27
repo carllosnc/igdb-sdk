@@ -14,11 +14,11 @@ Zero runtime dependencies — uses the global `fetch` API (Node 18+, Bun, Deno).
 ## Setup
 
 ```bash
-npm install igdb-sdk
+npm install @carlosnc/igdb-sdk
 ```
 
 ```bash
-bun install igdb-sdk
+bun install @carlosnc/igdb-sdk
 ```
 
 Copy `.env.example` to `.env` and fill in your Twitch credentials ([register here](https://dev.twitch.tv/console/apps)):
@@ -30,7 +30,7 @@ cp .env.example .env
 ## Usage
 
 ```typescript
-import { IGDBClient, gameQuery } from "igdb-sdk";
+import { IGDBClient, gameQuery } from "@carlosnc/igdb-sdk";
 
 const client = new IGDBClient({
   clientId: process.env.TWITCH_CLIENT_ID!,
@@ -84,7 +84,7 @@ const count = await client.game.getCount("where rating > 80;");
 ### Error handling
 
 ```typescript
-import { IgdbApiError, IgdbAuthError, IgdbRateLimitError } from "igdb-sdk";
+import { IgdbApiError, IgdbAuthError, IgdbRateLimitError } from "@carlosnc/igdb-sdk";
 
 try {
   await client.query("games", "...");
@@ -127,7 +127,7 @@ const client = new IGDBClient({ clientId, clientSecret, middlewares: [logger] })
 Inject your own HTTP layer — useful for adding tracing, using axios, or mocking in tests.
 
 ```typescript
-import type { HttpClient } from "igdb-sdk";
+import type { HttpClient } from "@carlosnc/igdb-sdk";
 
 const tracingClient: HttpClient = {
   async post(url, headers, body) {
