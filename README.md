@@ -1,8 +1,9 @@
-# IGDB SDK
 
 <picture>
-  <img alt="IGDB logo" src="https://upload.wikimedia.org/wikipedia/commons/1/19/IGDB_logo.svg" width="200">
+  <img alt="IGDB logo" src="https://upload.wikimedia.org/wikipedia/commons/1/19/IGDB_logo.svg" width="150">
 </picture>
+
+# IGDB SDK
 
 Unofficial [IGDB API v4](https://api-docs.igdb.com/) SDK for Bun/TypeScript.
 
@@ -102,3 +103,7 @@ bun run --env-file .env examples/reference-data.ts
 |---|---|
 | `bun test` | Run tests |
 | `bun run typecheck` | TypeScript type checking |
+
+---
+
+Carlos Costa @ 2026
