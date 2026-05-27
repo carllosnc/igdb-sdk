@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.1.1] - 2026-05-27
+
+### Added
+- `HttpClient` interface and `FetchHttpClient` for injectable HTTP layer
+- Custom HTTP client injection via `httpClient` option
+- Export `HttpClient`, `HttpResponse`, and `FetchHttpClient` from package
+- Example scripts: middleware pipeline, error handling with retry, queryCount + getById
+
+### Changed
+- Middleware `onResponse` now receives `HttpResponse` (not native `Response`)
+- `IGDBClient` uses injected `httpClient` instead of raw `fetch` internally
+- Token endpoint also goes through the injected HTTP client
+
+### Fixed
+- Test middleware pipeline tests match updated `onResponse` signature
+
 ## [0.1.0] - 2026-05-27
 
 ### Added
