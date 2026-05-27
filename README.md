@@ -7,14 +7,18 @@
 
 [![CI](https://github.com/carllosnc/igdb-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/carllosnc/igdb-sdk/actions/workflows/ci.yml)
 
-Unofficial [IGDB API v4](https://api-docs.igdb.com/) SDK for Bun/TypeScript.
+Unofficial [IGDB API v4](https://api-docs.igdb.com/) SDK for TypeScript.
 
-Zero runtime dependencies — uses Bun's built-in `fetch`.
+Zero runtime dependencies — uses the global `fetch` API (Node 18+, Bun, Deno).
 
 ## Setup
 
 ```bash
-bun install
+npm install igdb-sdk
+```
+
+```bash
+bun install igdb-sdk
 ```
 
 Copy `.env.example` to `.env` and fill in your Twitch credentials ([register here](https://dev.twitch.tv/console/apps)):
@@ -67,6 +71,68 @@ Typed factory functions: `gameQuery()`, `platformQuery()`, `companyQuery()`, `se
 client.game.getGames("fields name,rating; where rating > 80; sort rating desc; limit 5;");
 ```
 
+### Convenience methods
+
+```typescript
+// Get by ID — returns item or null
+const game = await client.game.getById(1020, "name,rating,cover");
+
+// Count matching records
+const count = await client.game.getCount("where rating > 80;");
+```
+
+### Error handling
+
+```typescript
+import { IgdbApiError, IgdbAuthError, IgdbRateLimitError } from "igdb-sdk";
+
+try {
+  await client.query("games", "...");
+} catch (e) {
+  if (e instanceof IgdbRateLimitError) console.log("rate limited");
+  if (e instanceof IgdbAuthError) console.log("bad credentials");
+  if (e instanceof IgdbApiError) console.log(`${e.statusCode} on ${e.endpoint}`);
+}
+```
+
+### Retry
+
+Transient failures (429, 5xx, network errors) are retried automatically with exponential backoff.
+
+```typescript
+const client = new IGDBClient({
+  clientId: "...",
+  clientSecret: "...",
+  retry: { maxRetries: 5, baseDelayMs: 500 },
+});
+```
+
+### Middleware
+
+Intercept requests and responses with custom hooks.
+
+```typescript
+const logger = {
+  name: "logger",
+  onRequest(ctx) { console.log(`→ ${ctx.endpoint}`); return ctx; },
+  onResponse(res, ctx) { console.log(`← ${ctx.endpoint} ${res.status}`); return res; },
+  onError(err, ctx) { console.error(`✗ ${ctx.endpoint} ${err.message}`); },
+};
+
+const client = new IGDBClient({ clientId, clientSecret, middlewares: [logger] });
+```
+
+### Debug mode
+
+Built-in request/response logging — shorthand for the logger middleware above.
+
+```typescript
+const client = new IGDBClient({ clientId, clientSecret, debug: true });
+// → games
+//   body: fields name,rating; limit 5;
+// ← games 200
+```
+
 ## Examples
 
 See [`examples/`](./examples) for runnable scripts. Run with your `.env` file loaded:
@@ -103,7 +169,8 @@ bun run --env-file .env examples/reference-data.ts
 
 | Command | Action |
 |---|---|
-| `bun test` | Run tests |
+| `bun run build` | Compile ESM + CJS to `dist/` |
+| `bun test` | Run tests (140+) |
 | `bun run typecheck` | TypeScript type checking |
 
 ---
