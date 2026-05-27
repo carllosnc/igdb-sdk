@@ -63,14 +63,14 @@ client.game.getGames("fields name,rating; where rating > 80; sort rating desc; l
 
 ## Examples
 
-See [`examples/`](./examples) for runnable scripts:
+See [`examples/`](./examples) for runnable scripts. Run with your `.env` file loaded:
 
 ```bash
-bun run examples/basic-usage.ts
-bun run examples/search-games.ts
-bun run examples/game-details.ts
-bun run examples/company-and-platforms.ts
-bun run examples/reference-data.ts
+bun run --env-file .env examples/basic-usage.ts
+bun run --env-file .env examples/search-games.ts
+bun run --env-file .env examples/game-details.ts
+bun run --env-file .env examples/company-and-platforms.ts
+bun run --env-file .env examples/reference-data.ts
 ```
 
 ## Sub-clients
