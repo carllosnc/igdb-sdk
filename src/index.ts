@@ -18,3 +18,4 @@ export { WebsiteClient } from "./client/website/index.js";
 export { MiscClient } from "./client/misc/index.js";
 
 export * from "./types/index.js";
+export * from "./query.js";
