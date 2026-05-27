@@ -5,5 +5,5 @@ const client = new IGDBClient({
   clientSecret: process.env.TWITCH_CLIENT_SECRET!,
 });
 
-const games = await client.game.query("fields name,rating,cover.url; limit 5;");
+const games = await client.game.getGames("fields name,rating,cover.url; limit 5;");
 console.log(JSON.stringify(games, null, 2));
