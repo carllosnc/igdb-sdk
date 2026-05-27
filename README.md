@@ -1,9 +1,11 @@
 
 <picture>
-  <img alt="IGDB logo" src="https://upload.wikimedia.org/wikipedia/commons/1/19/IGDB_logo.svg" width="150">
+  <img alt="IGDB logo" src="https://upload.wikimedia.org/wikipedia/commons/1/19/IGDB_logo.svg" width="70">
 </picture>
 
 # IGDB SDK
+
+[![CI](https://github.com/carllosnc/igdb-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/carllosnc/igdb-sdk/actions/workflows/ci.yml)
 
 Unofficial [IGDB API v4](https://api-docs.igdb.com/) SDK for Bun/TypeScript.
 
