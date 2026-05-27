@@ -1,0 +1,31 @@
+import { describe, expect, test, mock } from "bun:test";
+import { ReleaseDateClient } from "../../client/release-date/index.js";
+
+function createMockClient() {
+  return {
+    query: mock(async (endpoint: string, body: string) => [
+      { id: 1, endpoint, body },
+    ]),
+  };
+}
+
+describe("ReleaseDateClient", () => {
+  const endpoints = [
+    ["getReleaseDates", "release_dates"],
+    ["getRegions", "release_date_regions"],
+    ["getStatuses", "release_date_statuses"],
+  ] as const;
+
+  for (const [method, endpoint] of endpoints) {
+    test(`${method} delegates to client.query with "${endpoint}"`, async () => {
+      const mockClient = createMockClient();
+      const client = new ReleaseDateClient(mockClient as any);
+      const body = "fields name; limit 1;";
+      const result = await (client as any)[method](body);
+      expect(mockClient.query).toHaveBeenCalledTimes(1);
+      expect(mockClient.query).toHaveBeenCalledWith(endpoint, body);
+      expect(result[0].endpoint).toBe(endpoint);
+      expect(result[0].body).toBe(body);
+    });
+  }
+});
