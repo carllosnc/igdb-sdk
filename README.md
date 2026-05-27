@@ -1,103 +1,101 @@
-# IGDB - SDK
+# IGDB SDK
 
-Unofficial IGDB API v4 SDK for Bun/TypeScript.
+Unofficial [IGDB API v4](https://api-docs.igdb.com/) SDK for Bun/TypeScript.
 
-Base URL: `https://api.igdb.com/v4/`
+Zero runtime dependencies — uses Bun's built-in `fetch`.
 
-## All API Resources
-
-- [ ] `age_rating_categories` — Age rating categories
-- [ ] `age_rating_content_description_types` — Content description types
-- [ ] `age_rating_content_descriptions` — Age rating content descriptions (deprecated)
-- [ ] `age_rating_content_descriptions_v2` — Age rating content descriptions v2
-- [ ] `age_rating_organizations` — Age rating organizations (ESRB, PEGI, etc.)
-- [ ] `age_ratings` — Age ratings
-- [ ] `alternative_names` — Alternative game titles
-- [ ] `artwork_types` — Artwork type classifications
-- [ ] `artworks` — Game artworks
-- [ ] `character_genders` — Character genders
-- [ ] `character_mug_shots` — Character mug shots
-- [ ] `character_species` — Character species
-- [ ] `characters` — Characters
-- [ ] `collection_membership_types` — Collection membership types
-- [ ] `collection_memberships` — Collection memberships
-- [ ] `collection_relation_types` — Collection relation types
-- [ ] `collection_relations` — Collection relations
-- [ ] `collection_types` — Collection types
-- [ ] `collections` — Collections
-- [ ] `companies` — Companies
-- [ ] `company_logos` — Company logos
-- [ ] `company_sizes` — Company size classifications
-- [ ] `company_statuses` — Company statuses
-- [ ] `company_type_histories` — Company type history
-- [ ] `company_types` — Company types
-- [ ] `company_websites` — Company websites
-- [ ] `covers` — Game covers
-- [ ] `date_formats` — Date formats
-- [ ] `entity_types` — Entity types
-- [ ] `event_logos` — Event logos
-- [ ] `event_networks` — Event networks
-- [ ] `events` — Events
-- [ ] `external_game_sources` — External game sources
-- [ ] `external_games` — External games (cross-platform IDs)
-- [ ] `franchises` — Franchises
-- [ ] `game_engine_logos` — Game engine logos
-- [ ] `game_engines` — Game engines
-- [ ] `game_localizations` — Game localizations
-- [ ] `game_modes` — Game modes
-- [ ] `game_release_formats` — Game release formats
-- [ ] `game_statuses` — Game statuses
-- [ ] `game_time_to_beats` — Time to beat
-- [ ] `game_types` — Game types
-- [ ] `game_videos` — Game videos
-- [ ] `games` — Games (primary endpoint)
-- [ ] `genres` — Genres
-- [ ] `involved_companies` — Involved companies
-- [ ] `keywords` — Keywords
-- [ ] `language_support_types` — Language support types
-- [ ] `language_supports` — Language supports
-- [ ] `languages` — Languages
-- [ ] `multiplayer_modes` — Multiplayer modes
-- [ ] `network_types` — Network types
-- [ ] `platform_families` — Platform families
-- [ ] `platform_logos` — Platform logos
-- [ ] `platform_types` — Platform types
-- [ ] `platform_version_companies` — Platform version companies
-- [ ] `platform_version_release_dates` — Platform version release dates
-- [ ] `platform_versions` — Platform versions
-- [ ] `platform_websites` — Platform websites
-- [ ] `platforms` — Platforms
-- [ ] `player_perspectives` — Player perspectives
-- [ ] `popularity_primitives` — Popularity primitives
-- [ ] `popularity_types` — Popularity types
-- [ ] `regions` — Regions
-- [ ] `release_date_regions` — Release date regions
-- [ ] `release_date_statuses` — Release date statuses
-- [ ] `release_dates` — Release dates
-- [ ] `report_types` — Report types
-- [ ] `reports` — Reports
-- [ ] `screenshots` — Screenshots
-- [ ] `search` — Search across multiple endpoint types
-- [ ] `themes` — Themes
-- [ ] `website_types` — Website types
-- [ ] `websites` — Websites
-
-## Usage
+## Setup
 
 ```bash
 bun install
-bun run index.ts
 ```
 
-## Authentication
-
-Requires a Twitch Client ID and Client Secret via `.env`:
+Create `.env` with Twitch credentials ([register here](https://dev.twitch.tv/console/apps)):
 
 ```
 TWITCH_CLIENT_ID=your_client_id
 TWITCH_CLIENT_SECRET=your_client_secret
 ```
----
 
-Carlos Costa @ 2026
+## Usage
 
+```typescript
+import { IGDBClient, gameQuery } from "igdb-sdk";
+
+const client = new IGDBClient({
+  clientId: process.env.TWITCH_CLIENT_ID!,
+  clientSecret: process.env.TWITCH_CLIENT_SECRET!,
+});
+
+const games = await client.game.getGames(
+  gameQuery()
+    .fields("name", "rating", "cover")
+    .where("rating", ">", 80)
+    .sort("rating", "desc")
+    .limit(5)
+    .build(),
+);
+```
+
+### QueryBuilder
+
+Build IGDB query strings with a typed chainable API. Field names auto-complete from the response type.
+
+| Method | Example |
+|---|---|
+| `.fields("name", "rating")` | Select fields |
+| `.expand("cover.url", "screenshots.url")` | Nested expansions (dot notation) |
+| `.where("rating", ">", 80)` | Filter conditions |
+| `.where("platforms", "=", [48, 130])` | Array containment |
+| `.whereIn("id", [1020, 1025])` | IN-list (`id = (1020,1025)`) |
+| `.sort("rating", "desc")` | Sort direction |
+| `.search("Mario")` | Full-text search |
+| `.limit(5).offset(10)` | Pagination |
+| `.build()` | Produces final query string |
+
+Typed factory functions: `gameQuery()`, `platformQuery()`, `companyQuery()`, `searchQuery()`, `genreQuery()`, `themeQuery()`, `coverQuery()`, `franchiseQuery()`, `playerPerspectiveQuery()`, and more. For ad-hoc types use `queryFor<T>()`.
+
+### Bare string (for complex queries)
+
+```typescript
+client.game.getGames("fields name,rating; where rating > 80; sort rating desc; limit 5;");
+```
+
+## Examples
+
+See [`examples/`](./examples) for runnable scripts:
+
+```bash
+bun run examples/basic-usage.ts
+bun run examples/search-games.ts
+bun run examples/game-details.ts
+bun run examples/company-and-platforms.ts
+bun run examples/reference-data.ts
+```
+
+## Sub-clients
+
+| Client | Endpoints |
+|---|---|
+| `client.game` | games, game_engines, game_engine_logos, game_localizations, game_modes, game_release_formats, game_statuses, game_time_to_beats, game_types, game_videos |
+| `client.platform` | platforms, platform_families, platform_logos, platform_types, platform_versions, platform_version_companies, platform_version_release_dates, platform_websites |
+| `client.company` | companies, company_logos, company_sizes, company_statuses, company_type_histories, company_types, company_websites |
+| `client.ageRating` | age_ratings, age_rating_categories, age_rating_content_descriptions, age_rating_content_description_types, age_rating_content_descriptions_v2, age_rating_organizations |
+| `client.artwork` | artworks, artwork_types, covers, screenshots |
+| `client.character` | characters, character_genders, character_mug_shots, character_species |
+| `client.collection` | collections, collection_memberships, collection_membership_types, collection_relations, collection_relation_types, collection_types |
+| `client.event` | events, event_logos, event_networks |
+| `client.externalGame` | external_games, external_game_sources |
+| `client.popularity` | popularity_primitives, popularity_types |
+| `client.releaseDate` | release_dates, release_date_regions, release_date_statuses |
+| `client.report` | reports, report_types |
+| `client.search` | search |
+| `client.website` | websites, website_types |
+| `client.misc` | alternative_names, date_formats, entity_types, franchises, genres, involved_companies, keywords, languages, language_supports, language_support_types, multiplayer_modes, network_types, player_perspectives, regions, themes |
+
+## Scripts
+
+| Command | Action |
+|---|---|
+| `bun test` | Run tests |
+| `bun run typecheck` | TypeScript type checking |
