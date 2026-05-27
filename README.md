@@ -10,11 +10,10 @@ Zero runtime dependencies — uses Bun's built-in `fetch`.
 bun install
 ```
 
-Create `.env` with Twitch credentials ([register here](https://dev.twitch.tv/console/apps)):
+Copy `.env.example` to `.env` and fill in your Twitch credentials ([register here](https://dev.twitch.tv/console/apps)):
 
-```
-TWITCH_CLIENT_ID=your_client_id
-TWITCH_CLIENT_SECRET=your_client_secret
+```bash
+cp .env.example .env
 ```
 
 ## Usage
