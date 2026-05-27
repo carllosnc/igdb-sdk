@@ -27,4 +27,13 @@ export class EventClient {
   async getNetworks(body: IGDBQuery): Promise<EventNetwork[]> {
     return this.client.query("event_networks", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("events", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<Event | null> {
+    const results = await this.client.query("events", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

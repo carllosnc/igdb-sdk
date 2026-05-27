@@ -86,4 +86,13 @@ export class GameClient {
   async getVideos(body: IGDBQuery): Promise<GameVideo[]> {
     return this.client.query("game_videos", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("games", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<Game | null> {
+    const results = await this.client.query("games", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

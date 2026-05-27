@@ -70,4 +70,13 @@ export class PlatformClient {
   async getWebsites(body: IGDBQuery): Promise<PlatformWebsite[]> {
     return this.client.query("platform_websites", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("platforms", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<Platform | null> {
+    const results = await this.client.query("platforms", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

@@ -37,4 +37,13 @@ export class CharacterClient {
   async getSpecies(body: IGDBQuery): Promise<CharacterSpecies[]> {
     return this.client.query("character_species", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("characters", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<Character | null> {
+    const results = await this.client.query("characters", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

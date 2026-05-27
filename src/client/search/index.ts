@@ -11,4 +11,13 @@ export class SearchClient {
   async getSearch(body: IGDBQuery): Promise<SearchResult[]> {
     return this.client.query("search", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("search", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<SearchResult | null> {
+    const results = await this.client.query("search", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

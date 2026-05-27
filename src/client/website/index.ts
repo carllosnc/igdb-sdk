@@ -19,4 +19,13 @@ export class WebsiteClient {
   async getTypes(body: IGDBQuery): Promise<WebsiteType[]> {
     return this.client.query("website_types", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("websites", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<Website | null> {
+    const results = await this.client.query("websites", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

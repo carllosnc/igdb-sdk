@@ -19,4 +19,13 @@ export class ReportClient {
   async getTypes(body: IGDBQuery): Promise<ReportType[]> {
     return this.client.query("report_types", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("reports", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<Report | null> {
+    const results = await this.client.query("reports", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

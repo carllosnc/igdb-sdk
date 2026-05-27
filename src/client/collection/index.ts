@@ -54,4 +54,13 @@ export class CollectionClient {
   async getTypes(body: IGDBQuery): Promise<CollectionType[]> {
     return this.client.query("collection_types", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("collections", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<Collection | null> {
+    const results = await this.client.query("collections", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

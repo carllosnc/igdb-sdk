@@ -55,4 +55,13 @@ export class AgeRatingClient {
   async getOrganizations(body: IGDBQuery): Promise<AgeRatingOrganization[]> {
     return this.client.query("age_rating_organizations", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("age_ratings", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<AgeRating | null> {
+    const results = await this.client.query("age_ratings", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

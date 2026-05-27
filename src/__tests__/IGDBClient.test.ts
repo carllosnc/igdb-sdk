@@ -249,4 +249,105 @@ describe("IGDBClient", () => {
       expect(order).toEqual(["req1", "req2", "res2", "res1"]);
     });
   });
+
+  describe("queryCount", () => {
+    test("hits {endpoint}/count and returns count number", async () => {
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        return new Response(JSON.stringify([{ count: 42 }]), { status: 200 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs" });
+      const count = await client.queryCount("games", "where rating > 80;");
+      expect(count).toBe(42);
+    });
+
+    test("returns 0 on empty response", async () => {
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        return new Response(JSON.stringify([]), { status: 200 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs" });
+      const count = await client.queryCount("games", "where id = 999999;");
+      expect(count).toBe(0);
+    });
+  });
+
+  describe("getById", () => {
+    test("fetches single item by id", async () => {
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        return new Response(JSON.stringify([{ id: 42, name: "Half-Life" }]), { status: 200 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs" });
+      const result = await client.game.getById(42, "name,rating");
+      expect(result).toEqual({ id: 42, name: "Half-Life" });
+    });
+
+    test("defaults fields to name", async () => {
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        return new Response(JSON.stringify([{ id: 7, name: "Test" }]), { status: 200 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs" });
+      await client.game.getById(7);
+      const apiCalls = (global.fetch as any).mock.calls.filter(
+        (c: any) => String(c[0]).startsWith(BASE_URL),
+      );
+      expect(apiCalls[0][1].body).toBe("fields name; where id = 7;");
+    });
+
+    test("returns null when not found", async () => {
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        return new Response(JSON.stringify([]), { status: 200 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs" });
+      const result = await client.game.getById(999);
+      expect(result).toBeNull();
+    });
+
+    test("getCount on sub-client delegates to queryCount", async () => {
+      global.fetch = mock((...args: any[]) => {
+        if (String(args[0]) === TOKEN_URL) {
+          return new Response(JSON.stringify({ access_token: "t", expires_in: 3600 }));
+        }
+        return new Response(JSON.stringify([{ count: 7 }]), { status: 200 });
+      }) as unknown as typeof fetch;
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs" });
+      const count = await client.game.getCount("where rating > 80;");
+      expect(count).toBe(7);
+    });
+  });
+
+  describe("debug", () => {
+    test("debug: true logs requests and responses", async () => {
+      global.fetch = okTokenFetch() as unknown as typeof fetch;
+
+      const logs: string[] = [];
+      const spy = mock((...args: any[]) => logs.push(args.join(" ")));
+      spyOn(console, "log").mockImplementation(spy);
+
+      const client = new IGDBClient({ clientId: "cid", clientSecret: "cs", debug: true });
+      await client.query("games", "fields name;");
+
+      expect(logs.some((l) => l.includes("[IGDB] →"))).toBe(true);
+      expect(logs.some((l) => l.includes("[IGDB] ←"))).toBe(true);
+    });
+  });
 });

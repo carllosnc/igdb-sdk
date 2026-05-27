@@ -1,6 +1,7 @@
 export { IGDBClient } from "./IGDBClient.js";
 export type { IGDBQuery, IGDBClientOptions } from "./IGDBClient.js";
 
+
 export { GameClient } from "./client/game/index.js";
 export { PlatformClient } from "./client/platform/index.js";
 export { CompanyClient } from "./client/company/index.js";

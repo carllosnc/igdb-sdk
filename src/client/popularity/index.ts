@@ -19,4 +19,13 @@ export class PopularityClient {
   async getTypes(body: IGDBQuery): Promise<PopularityType[]> {
     return this.client.query("popularity_types", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("popularity_primitives", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<PopularityPrimitive | null> {
+    const results = await this.client.query("popularity_primitives", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

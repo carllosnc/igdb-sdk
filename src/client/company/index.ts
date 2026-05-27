@@ -62,4 +62,13 @@ export class CompanyClient {
   async getWebsites(body: IGDBQuery): Promise<CompanyWebsite[]> {
     return this.client.query("company_websites", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("companies", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<Company | null> {
+    const results = await this.client.query("companies", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

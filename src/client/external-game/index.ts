@@ -19,4 +19,13 @@ export class ExternalGameClient {
   async getSources(body: IGDBQuery): Promise<ExternalGameSource[]> {
     return this.client.query("external_game_sources", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("external_games", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<ExternalGame | null> {
+    const results = await this.client.query("external_games", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }

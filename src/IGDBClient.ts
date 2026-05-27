@@ -29,6 +29,7 @@ export interface IGDBClientOptions {
   clientSecret: string;
   retry?: RetryOptions;
   middlewares?: Middleware[];
+  debug?: boolean;
 }
 
 type EndpointName = keyof EndpointResponseMap;
@@ -62,6 +63,23 @@ export class IGDBClient {
     this.clientSecret = options.clientSecret;
     this.retryOptions = { ...defaultRetry, ...options.retry };
     this.middlewares = options.middlewares ?? [];
+
+    if (options.debug) {
+      this.middlewares.unshift({
+        name: "debug",
+        onRequest(ctx) {
+          console.log(`[IGDB] → ${ctx.endpoint}\n  body: ${ctx.body}`);
+          return ctx;
+        },
+        onResponse(res, ctx) {
+          console.log(`[IGDB] ← ${ctx.endpoint} ${res.status}`);
+          return res;
+        },
+        onError(err, ctx) {
+          console.error(`[IGDB] ✗ ${ctx.endpoint} ${err.message}`);
+        },
+      });
+    }
 
     this.game = new GameClient(this);
     this.platform = new PlatformClient(this);
@@ -145,6 +163,47 @@ export class IGDBClient {
     }
 
     return response.json() as Promise<EndpointResponseMap[E]>;
+  }
+
+  async queryCount<E extends EndpointName>(endpoint: E, body: IGDBQuery): Promise<number> {
+    const token = await this.ensureToken();
+
+    let ctx: RequestContext = {
+      endpoint: `${endpoint}/count`,
+      body,
+      headers: {
+        "Client-ID": this.clientId,
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "text/plain",
+      },
+    };
+
+    for (const mw of this.middlewares) {
+      if (mw.onRequest) {
+        ctx = await mw.onRequest(ctx);
+      }
+    }
+
+    let response: Response;
+    try {
+      response = await this.fetchWithRetry(ctx);
+    } catch (error) {
+      for (const mw of this.middlewares) {
+        if (mw.onError) {
+          await mw.onError(error as Error, ctx);
+        }
+      }
+      throw error;
+    }
+
+    for (const mw of this.middlewares.toReversed()) {
+      if (mw.onResponse) {
+        response = await mw.onResponse(response, ctx);
+      }
+    }
+
+    const data = (await response.json()) as { count: number }[];
+    return data[0]?.count ?? 0;
   }
 
   private async fetchWithRetry(ctx: RequestContext, attempt: number = 0): Promise<Response> {

@@ -29,4 +29,13 @@ export class ReleaseDateClient {
   async getStatuses(body: IGDBQuery): Promise<ReleaseDateStatus[]> {
     return this.client.query("release_date_statuses", body);
   }
+
+  async getCount(body: IGDBQuery): Promise<number> {
+    return this.client.queryCount("release_dates", body);
+  }
+
+  async getById(id: number, fields: string = "name"): Promise<ReleaseDate | null> {
+    const results = await this.client.query("release_dates", `fields ${fields}; where id = ${id};`);
+    return results[0] ?? null;
+  }
 }
