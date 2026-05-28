@@ -6,8 +6,8 @@
 # IGDB SDK
 
 [![CI](https://github.com/carllosnc/igdb-sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/carllosnc/igdb-sdk/actions/workflows/ci.yml)
-[![Bun](https://img.shields.io/badge/Bun-%23000000?logo=bun&logoColor=white)](https://bun.sh)
-[![npm downloads](https://img.shields.io/npm/dm/@carlosnc/igdb-sdk)](https://www.npmjs.com/package/@carlosnc/igdb-sdk)
+[![Bun](https://img.shields.io/badge/Bun_1.3.13-%23000000?logo=bun&logoColor=white)](https://bun.sh)
+[![npm downloads](https://img.shields.io/npm/dm/@carlosnc/igdb-sdk?logo=npm)](https://www.npmjs.com/package/@carlosnc/igdb-sdk)
 
 Unofficial [IGDB API v4](https://api-docs.igdb.com/) SDK for TypeScript.
 
